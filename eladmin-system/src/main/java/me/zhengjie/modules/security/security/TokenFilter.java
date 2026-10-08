@@ -75,10 +75,12 @@ public class TokenFilter extends GenericFilterBean {
         // 获取用户Token的Key
         String loginKey = tokenProvider.loginKey(token);
         OnlineUserDto onlineUserDto = onlineUserService.getOne(loginKey);
-        // Token 续期判断
-        if (onlineUserDto != null) {
-            tokenProvider.checkRenewal(token);
+        // 判断用户在线信息是否为空
+        if (onlineUserDto == null) {
+            return;
         }
+        // Token 续期判断
+        tokenProvider.checkRenewal(token);
         // 获取认证信息，设置上下文
         Authentication authentication = tokenProvider.getAuthentication(token);
         SecurityContextHolder.getContext().setAuthentication(authentication);
