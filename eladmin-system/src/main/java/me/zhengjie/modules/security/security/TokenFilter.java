@@ -57,23 +57,31 @@ public class TokenFilter extends GenericFilterBean {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws IOException, ServletException {
-        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
-        String token = resolveToken(httpServletRequest);
-        // 对于 Token 为空的不需要去查 Redis
-        if(StrUtil.isNotBlank(token)){
-            // 获取用户Token的Key
-            String loginKey = tokenProvider.loginKey(token);
-            OnlineUserDto onlineUserDto = onlineUserService.getOne(loginKey);
-            // 判断用户在线信息是否为空
-            if (onlineUserDto != null) {
-                // Token 续期判断
-                tokenProvider.checkRenewal(token);
-                // 获取认证信息，设置上下文
-                Authentication authentication = tokenProvider.getAuthentication(token);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-        }
+        authenticate((HttpServletRequest) servletRequest);
         filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    /**
+     * 解析请求中的Token，设置认证上下文
+     *
+     * @param request /
+     */
+    private void authenticate(HttpServletRequest request) {
+        String token = resolveToken(request);
+        // 对于 Token 为空的不需要去查 Redis
+        if (StrUtil.isBlank(token)) {
+            return;
+        }
+        // 获取用户Token的Key
+        String loginKey = tokenProvider.loginKey(token);
+        OnlineUserDto onlineUserDto = onlineUserService.getOne(loginKey);
+        // Token 续期判断
+        if (onlineUserDto != null) {
+            tokenProvider.checkRenewal(token);
+        }
+        // 获取认证信息，设置上下文
+        Authentication authentication = tokenProvider.getAuthentication(token);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     /**
