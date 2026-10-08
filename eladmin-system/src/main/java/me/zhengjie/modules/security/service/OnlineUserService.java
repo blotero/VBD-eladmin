@@ -145,7 +145,7 @@ public class OnlineUserService {
         List<OnlineUserDto> onlineUsers = getAll(username);
         for (OnlineUserDto onlineUser : onlineUsers) {
             if (onlineUser != null && username.equals(onlineUser.getUserName())) {
-                redisUtils.del(onlineUser.getKey());
+                redisUtils.del(properties.getOnlineKey() + username + ":" + onlineUser.getUid());
             }
         }
     }
