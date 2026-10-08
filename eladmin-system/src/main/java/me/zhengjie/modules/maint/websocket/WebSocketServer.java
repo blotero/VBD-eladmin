@@ -19,6 +19,7 @@ import com.alibaba.fastjson2.JSON;
 import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.security.TokenProvider;
+import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.utils.SpringBeanHolder;
 import org.springframework.stereotype.Component;
 import javax.websocket.*;
@@ -79,8 +80,9 @@ public class WebSocketServer {
 		}
 		String token = tokens.get(0);
 		TokenProvider tokenProvider = SpringBeanHolder.getBean(TokenProvider.class);
+		OnlineUserService onlineUserService = SpringBeanHolder.getBean(OnlineUserService.class);
 		try {
-			return tokenProvider.getClaims(token).getSubject() != null;
+			return onlineUserService.getOne(tokenProvider.loginKey(token)) != null;
 		} catch (JwtException | IllegalArgumentException e) {
 			log.debug("WebSocket Token 校验失败：{}", e.getMessage());
 			return false;
