@@ -146,7 +146,13 @@ public class AuthController {
     @ApiOperation("退出登录")
     @AnonymousDeleteMapping(value = "/logout")
     public ResponseEntity<Object> logout(HttpServletRequest request) {
-        onlineUserService.logout(tokenProvider.getToken(request));
+        String token = tokenProvider.getToken(request);
+        if (StringUtils.isBlank(token)) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+        // 删除在线信息
+        onlineUserService.logout(token);
+        SecurityContextHolder.clearContext();
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
