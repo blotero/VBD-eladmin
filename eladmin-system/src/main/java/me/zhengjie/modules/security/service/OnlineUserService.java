@@ -142,7 +142,11 @@ public class OnlineUserService {
      * @param username /
      */
     public void kickOutForUsername(String username) {
-        String loginKey = properties.getOnlineKey() + username + "*";
-        redisUtils.scanDel(loginKey);
+        List<OnlineUserDto> onlineUsers = getAll(username);
+        for (OnlineUserDto onlineUser : onlineUsers) {
+            if (onlineUser != null && username.equals(onlineUser.getUserName())) {
+                redisUtils.del(onlineUser.getKey());
+            }
+        }
     }
 }
