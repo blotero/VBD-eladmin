@@ -25,10 +25,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
+import org.springframework.web.util.WebUtils;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
@@ -61,9 +63,7 @@ public class TokenFilter extends GenericFilterBean {
         String token = resolveToken(httpServletRequest);
         // 对于 Token 为空的不需要去查 Redis
         if(StrUtil.isNotBlank(token)){
-            // 获取用户Token的Key
-            String loginKey = tokenProvider.loginKey(token);
-            OnlineUserDto onlineUserDto = onlineUserService.getOne(loginKey);
+            OnlineUserDto onlineUserDto = findOnlineUser(token);
             // 判断用户在线信息是否为空
             if (onlineUserDto != null) {
                 // Token 续期判断
@@ -77,6 +77,18 @@ public class TokenFilter extends GenericFilterBean {
     }
 
     /**
+     * 根据Token 查询在线用户
+     *
+     * @param token /
+     * @return /
+     */
+    private OnlineUserDto findOnlineUser(String token) {
+        // 获取用户Token的Key
+        String loginKey = tokenProvider.loginKey(token);
+        return onlineUserService.getOne(loginKey);
+    }
+
+    /**
      * 初步检测Token
      *
      * @param request /
@@ -87,9 +99,13 @@ public class TokenFilter extends GenericFilterBean {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(properties.getTokenStartWith())) {
             // 去掉令牌前缀
             return bearerToken.replace(properties.getTokenStartWith(), "");
-        } else {
-            log.debug("非法Token：{}", bearerToken);
         }
+        // 文件下载等无法携带请求头的场景，从 Cookie 中读取
+        Cookie cookie = WebUtils.getCookie(request, properties.getHeader());
+        if (cookie != null && StrUtil.isNotBlank(cookie.getValue())) {
+            return cookie.getValue();
+        }
+        log.debug("非法Token：{}", bearerToken);
         return null;
     }
 }
