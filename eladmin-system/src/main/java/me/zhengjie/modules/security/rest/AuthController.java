@@ -149,4 +149,11 @@ public class AuthController {
         onlineUserService.logout(tokenProvider.getToken(request));
         return new ResponseEntity<>(HttpStatus.OK);
     }
+
+    @ApiOperation("退出全部设备")
+    @DeleteMapping(value = "/logout/all")
+    public ResponseEntity<Object> logoutAll(HttpServletRequest request) {
+        onlineUserService.logoutAll(tokenProvider.getToken(request));
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

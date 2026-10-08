@@ -43,6 +43,7 @@ public class OnlineUserService {
     private final SecurityProperties properties;
     private final TokenProvider tokenProvider;
     private final RedisUtils redisUtils;
+    private final UserCacheManager userCacheManager;
 
     /**
      * 保存在线用户信息
@@ -105,6 +106,20 @@ public class OnlineUserService {
     public void logout(String token) {
         String loginKey = tokenProvider.loginKey(token);
         redisUtils.del(loginKey);
+    }
+
+    /**
+     * 退出全部设备
+     * @param token /
+     */
+    public void logoutAll(String token) {
+        String username = tokenProvider.getClaims(token).getSubject();
+        List<String> keys = redisUtils.scan(properties.getOnlineKey() + username + ":*");
+        if (!keys.isEmpty()) {
+            redisUtils.del(keys.toArray(new String[0]));
+        }
+        userCacheManager.cleanUserCache(username);
+        log.info("用户 {} 退出全部设备，清除会话 {} 个", username, keys.size());
     }
 
     /**
