@@ -18,10 +18,12 @@ package me.zhengjie.modules.security.rest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.modules.security.config.SecurityProperties;
 import me.zhengjie.modules.security.service.OnlineUserService;
 import me.zhengjie.modules.security.service.dto.OnlineUserDto;
 import me.zhengjie.utils.EncryptUtils;
 import me.zhengjie.utils.PageResult;
+import me.zhengjie.utils.RedisUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +43,8 @@ import java.util.Set;
 public class OnlineController {
 
     private final OnlineUserService onlineUserService;
+    private final SecurityProperties properties;
+    private final RedisUtils redisUtils;
 
     @ApiOperation("查询在线用户")
     @GetMapping
@@ -63,7 +67,7 @@ public class OnlineController {
         for (String token : keys) {
             // 解密Key
             token = EncryptUtils.desDecrypt(token);
-            onlineUserService.logout(token);
+            redisUtils.del(properties.getOnlineKey() + token);
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }
