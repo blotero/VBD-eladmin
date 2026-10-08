@@ -16,12 +16,16 @@
 package me.zhengjie.modules.maint.websocket;
 
 import com.alibaba.fastjson2.JSON;
+import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.modules.security.security.TokenProvider;
+import me.zhengjie.utils.SpringBeanHolder;
 import org.springframework.stereotype.Component;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArraySet;
 /**
@@ -51,12 +55,36 @@ public class WebSocketServer {
 	 * 连接建立成功调用的方法
 	 * */
 	@OnOpen
-	public void onOpen(Session session,@PathParam("sid") String sid) {
+	public void onOpen(Session session,@PathParam("sid") String sid) throws IOException {
+		if (!authenticate(session)) {
+			session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "Unauthorized"));
+			return;
+		}
 		this.session = session;
 		//如果存在就先删除一个，防止重复推送消息
 		webSocketSet.removeIf(webSocket -> webSocket.sid.equals(sid));
 		webSocketSet.add(this);
 		this.sid=sid;
+	}
+
+	/**
+	 * 校验连接携带的Token
+	 * @param session /
+	 * @return /
+	 */
+	private boolean authenticate(Session session) {
+		List<String> tokens = session.getRequestParameterMap().get("token");
+		if (tokens == null || tokens.isEmpty()) {
+			return false;
+		}
+		String token = tokens.get(0);
+		TokenProvider tokenProvider = SpringBeanHolder.getBean(TokenProvider.class);
+		try {
+			return tokenProvider.getClaims(token).getSubject() != null;
+		} catch (JwtException | IllegalArgumentException e) {
+			log.debug("WebSocket Token 校验失败：{}", e.getMessage());
+			return false;
+		}
 	}
 
 	/**
