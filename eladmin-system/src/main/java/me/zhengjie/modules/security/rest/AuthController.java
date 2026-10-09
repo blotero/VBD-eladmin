@@ -32,6 +32,7 @@ import me.zhengjie.modules.security.config.enums.LoginCodeEnum;
 import me.zhengjie.modules.security.config.LoginProperties;
 import me.zhengjie.modules.security.config.SecurityProperties;
 import me.zhengjie.modules.security.security.TokenProvider;
+import me.zhengjie.modules.security.service.UserCacheManager;
 import me.zhengjie.modules.security.service.UserDetailsServiceImpl;
 import me.zhengjie.modules.security.service.dto.AuthUserDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
@@ -73,6 +74,7 @@ public class AuthController {
     private final CaptchaConfig captchaConfig;
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsServiceImpl userDetailsService;
+    private final UserCacheManager userCacheManager;
 
     @Log("用户登录")
     @ApiOperation("登录授权")
@@ -146,7 +148,8 @@ public class AuthController {
     @ApiOperation("退出登录")
     @AnonymousDeleteMapping(value = "/logout")
     public ResponseEntity<Object> logout(HttpServletRequest request) {
-        onlineUserService.logout(tokenProvider.getToken(request));
+        String token = tokenProvider.getToken(request);
+        userCacheManager.cleanUserCache(tokenProvider.getClaims(token).getSubject());
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
