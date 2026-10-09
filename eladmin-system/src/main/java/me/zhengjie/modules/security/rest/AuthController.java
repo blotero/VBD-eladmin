@@ -149,6 +149,7 @@ public class AuthController {
     @AnonymousDeleteMapping(value = "/logout")
     public ResponseEntity<Object> logout(HttpServletRequest request) {
         String token = tokenProvider.getToken(request);
+        onlineUserService.logout(token);
         userCacheManager.cleanUserCache(tokenProvider.getClaims(token).getSubject());
         return new ResponseEntity<>(HttpStatus.OK);
     }
