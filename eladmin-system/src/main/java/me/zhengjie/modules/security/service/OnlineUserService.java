@@ -103,7 +103,14 @@ public class OnlineUserService {
      * @param token /
      */
     public void logout(String token) {
+        if (StringUtils.isBlank(token)) {
+            return;
+        }
         String loginKey = tokenProvider.loginKey(token);
+        OnlineUserDto onlineUserDto = getOne(loginKey);
+        if (onlineUserDto != null) {
+            log.info("用户 {} 退出登录, IP: {}", onlineUserDto.getUserName(), onlineUserDto.getIp());
+        }
         redisUtils.del(loginKey);
     }
 
